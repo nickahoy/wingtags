@@ -167,8 +167,7 @@
       },
   
       initializeLocationView: function() {
-        var view = new LocationView();
-        view.locationProvider = this.locationProvider;
+        var view = new LocationView({ locationProvider: this.locationProvider });
         this.subviews.push(view);
       },
   
@@ -187,11 +186,19 @@
         _.bindAll(this, 
           'render',
           'renderCoordinateView',
-          'renderAddressView');
+          'renderAddressView',
+          'onLocationError');
   
         if (options !== undefined) {
           this.locationProvider = options.locationProvider;
+          this.locationProvider.on('didFailToUpdateLocation', this.onLocationError);
         }
+
+        this.coordinateView = new CoordinateView({
+          locationProvider: this.locationProvider
+        });
+
+        this.addressView = new AddressView();
       },
   
       render: function() {
@@ -204,9 +211,10 @@
       },
   
       renderCoordinateView: function() {
-        this.coordinateView = new CoordinateView({
-          locationProvider: this.locationProvider
-        });
+        console.log('renderCoordinateView.this ', this);
+        //this.coordinateView = new CoordinateView({
+        //  locationProvider: this.locationProvider
+        //});
         
         this.$el.append(this.coordinateView.render().el);
       },
@@ -217,6 +225,13 @@
         });
   
         this.$el.append(this.addressView.render().el);
+      },
+
+      onLocationError: function(e) {
+        console.log("ON LOCATION ERROR");
+        console.log("this: ", this);
+        this.coordinateView.remove();
+        this.renderAddressView();
       }
     });
   

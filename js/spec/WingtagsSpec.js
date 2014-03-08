@@ -89,8 +89,8 @@ describe("LocationProvider", function() {
 describe("LocationView", function() {
 
   beforeEach(function() {
-    this.locationView = new LocationView();
-    this.locationView.locationProvider = new LocationProvider();
+    this.locationView = new LocationView({locationProvider: new LocationProvider });
+    //this.locationView.locationProvider = new LocationProvider();
   });
 
   it("Should accept a locationProvider object on instantiation", function() {
@@ -98,6 +98,18 @@ describe("LocationView", function() {
     var locationView = new LocationView({ locationProvider: locationProvider });
 
     expect(locationView.locationProvider).toExist();
+  });
+
+  describe("on GPS error", function() {
+    it("renders an addressView", function() {
+      var locationProvider = new LocationProvider();
+      var locationView = new LocationView({ locationProvider: locationProvider });
+
+      locationView.locationProvider.trigger('didFailToUpdateLocation', {});
+
+      expect(locationView.el).toContainElement('input#suburb');
+      expect(locationView.el).not.toContainElement('span#gps-status');
+    });
   });
 
   describe("When GPS is not available:", function() {
@@ -111,9 +123,9 @@ describe("LocationView", function() {
       expect(this.locationView.addressView).toExist();
     });
 
-    it("Does not instantiate a CoordinateView", function() {
+    it("Does not render a CoordinateView", function() {
       this.locationView.render();
-      expect(this.locationView.CoordinateView).not.toExist();
+      expect(this.locationView.el).not.toContainElement('span#gps-status');
     });
 
     it("Renders a suburb field", function() {
@@ -138,9 +150,9 @@ describe("LocationView", function() {
       expect(this.locationView.coordinateView).toExist();
     });
 
-    it("Does not instantiate an AddressView", function() {
+    it("Does not render an AddressView", function() {
       this.locationView.render();
-      expect(this.locationView.addressView).not.toExist();
+      expect(this.locationView.el).not.toContainElement('input#suburb');
     });
 
     it("Renders a gps status field", function() {
@@ -168,32 +180,6 @@ describe("LocationView", function() {
       it("should render new coords in view", function() {
         this.locationView.trigger('didUpdateLocation', [this.geoStub]);
       });
-    });
-  });
-
-  describe("On successful location capture", function() {
-
-    beforeEach(function() {
-      this.geoStub = { 
-        coords: {
-          latitude: 33.882973359510984,
-          longitude: 151.26951911449567,
-          altitude: null,
-          accuracy: 65, 
-          altitudeAccuracy: null,
-          heading: null,
-          speed: null
-        }, 
-        timestamp: 415836029296
-      }
-    });
-
-    it("renders the latitude and longitude values", function() {
-      this.locationView.locationProvider.onSuccess(this.geoStub);
-      var $el = this.locationView.render().$el;
-
-      expect($el).toHaveText('33.882973');
-      expect($el).toHaveText('151.269519');
     });
   });
 });
