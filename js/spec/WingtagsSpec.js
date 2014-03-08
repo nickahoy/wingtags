@@ -9,58 +9,59 @@ describe("LocationProvider", function() {
 
   beforeEach(function() {
     this.locationProvider = new LocationProvider();
-    this.locationProvider.on('didUpdateLocation', console.log('event fired'));
   });
 
-  it("should raise a didUpdateLocation event", function() {
-    var spyEvent = spyOnEvent(this.locationProvider, 'didUpdateLocation');
+  describe("When geolocation is not available", function() {
+    beforeEach(function() {
+      this.locationProvider.isAvailable = function() { return false; }
+    });
 
-    var geoposition = { 
-      coords: { 
-        latitude: 33.882973359510984, longitude: 151.26951911449567, altitude: null,
-        accuracy: 65, 
-        altitudeAccuracy: null,
-        heading: null,
-        speed: null
-      }, 
-      timestamp: 415836029296
-    };
+    it("should raise an error on getCurrentPosition()", function() {
+      var spy = sinon.spy();
+      this.locationProvider.on('didFailToUpdateLocation', spy);
 
-    var position = new Position(geoposition, {parse: true});
+      this.locationProvider.getCurrentPosition();
 
-    this.locationProvider.success(position);
-
-    expect(spyEvent).toHaveBeenTriggered();
+      expect(spy.calledOnce).toBeTruthy();
+    });
   });
 
-  //describe("isAvailable", function() {
-  //
-  //  it("Returns true if geolocation available", function() {
-  //    this.geo.geoProvider = { geolocation: {} };
-  //
-  //    expect(this.geo.isAvailable()).toBe(true);
-  //  });
-  //
-  //  it("Returns false if geolocaiton not available", function() {
-  //    this.geo.isAvailable = function() { return false; }
-  //
-  //    expect(this.geo.isAvailable()).toBe(false);
-  //  });
-  //});
+  describe("on success", function() {
+    it("should raise a didUpdateLocation event", function() {
+      var spy = sinon.spy();
+      this.locationProvider.on('didUpdateLocation', spy);
+  
+      var position = {}; 
+      this.locationProvider.onSuccess(position);
+  
+      expect(spy.calledWith(position)).toBeTruthy();
+    });
+  });
+
+  describe("on failure", function() {
+    it("should raise a didFailToUpdateLocation event", function() {
+      var spy = sinon.spy();
+      this.locationProvider.on('didFailToUpdateLocation', spy);
+
+      var error = {};
+      this.locationProvider.onError(error);
+
+      expect(spy.calledWith(error)).toBeTruthy();
+    });
+  });
 });
 
 describe("LocationView", function() {
 
   beforeEach(function() {
-    this.geo = new Geo();
     this.locationView = new LocationView();
-    this.locationView.geoProvider = this.geo;
+    this.locationView.locationProvider = new LocationProvider();
   });
 
   describe("When GPS is not available:", function() {
 
     beforeEach(function() {
-      this.locationView.geoProvider.isAvailable = function() { return false; };
+      this.locationView.locationProvider.isAvailable = function() { return false; };
     });
 
     it("Instantiates an AddressView", function() {
@@ -87,7 +88,7 @@ describe("LocationView", function() {
   describe("When GPS is available", function() {
 
     beforeEach(function() {
-      this.locationView.geoProvider.isAvailable = function() { return true; }
+      this.locationView.locationProvider.isAvailable = function() { return true; }
     });
 
     it("Instantiates a CoordinateView", function() {
@@ -127,31 +128,6 @@ describe("LocationView", function() {
       });
     });
   });
-
-  //beforeEach(function() {
-  //  this.geo = new Geo();
-  //  this.geo.geoProvider = { geolocation: {} };
-//
-  //  this.locationView = new LocationView({
-  //    model: this.geo
-  //  });
-  //});
-
-  
-
-   // it("Displays geo view if geolocation available", function() {
-   //   this.geo = new Geo();
-   //   this.geo.isAvailable = function() { return true; }
-   //   this.geo.geoProvider = { geolocation: {} };
-  //
-   //   var view = new LocationView({
-   //     model: this.geo
-   //   });
-  //
-   //   console.log('test output: ', view.render().$el);
-   //   expect(view.render().$el).toHaveText('Getting location...');
-   // });
-
 });
 
 describe("AppView", function() {
@@ -282,31 +258,3 @@ describe("ImageView", function() {
     });
   });
 });
-
-
-
-
-  // -- Camera capture --
-  // 1. navigator.getusermedia?
-  // 2. input type="file"?
-  // 3. Image capture not supported
-
-  // -- Geo capture --
-  // 1. navigator.geolocation? 
-  //    getCurrentPosition -> set high accuracy
-  // 2. Display suburb, street
-
-  // Yes -> use that
-  // No 
-
-  //it("Should get location") {
-//
-  //};
-//
-  //it("Should pass", function() {
-  //  expect(1).toEqual(1);
-  //});
-//
-  //it("Should fail", function() {
-  //  expect(1).toEqual(2);
-  //});

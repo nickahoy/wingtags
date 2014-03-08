@@ -13,36 +13,12 @@
       </div> \
     </div>");
 
-  window.Geo = Backbone.Model.extend({
-
-    initialize: function() {
-      _.bindAll(this, 'isAvailable', 'getCurrentPosition');
-
-      if (this.isAvailable) { 
-        this.geoProvider = window.navigator.geolocation;
-        this.getCurrentPosition();
-      }
-    }, 
-
-    isAvailable:  function() {
-      return 'geolocation' in window.navigator;
-    },
-
-    getCurrentPosition: function() {
-      var options = {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 30000
-      };
-    }
-  });
-
   window.Position = Backbone.Model.extend({});
 
   window.LocationProvider = Backbone.Model.extend({
 
     initialize: function() {
-      _.bindAll(this, 'isAvailable', 'getCurrentPosition', 'success', 'error');
+      _.bindAll(this, 'isAvailable', 'getCurrentPosition', 'onSuccess', 'onError');
 
       if (this.isAvailable()) { 
         this._base = window.navigator.geolocation;
@@ -54,23 +30,28 @@
     },
 
     getCurrentPosition: function() {
-      var options = {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 120000
-      };
-
-      this._base.getCurrentPosition(this.success, this.error, options);
+      if (this.isAvailable()) {
+        var options = {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 120000
+        };
+  
+        this._base.getCurrentPosition(this.onSuccess, this.onError, options);
+      } else
+      {
+        this.onError();
+      }
     },
 
-    success: function(position) { 
+    onSuccess: function(position) { 
       this.trigger('didUpdateLocation', position);
       console.log('didUpdateLocation: ', position); 
     },
 
-    error: function(error) { 
-      this.trigger('didFailToUpdateLocationWithError', error);
-      console.log('didFailToUpdateLocationWithError: ', error); 
+    onError: function(error) { 
+      this.trigger('didFailToUpdateLocation', error);
+      console.log('didFailToUpdateLocation: ', error); 
     }
   });
 
@@ -164,7 +145,6 @@
     initializeLocationView: function() {
       var view = new LocationView();
       view.locationProvider = this.locationProvider;
-      view.geoProvider = new Geo(); // REMOVE
       this.subviews.push(view);
     },
 
@@ -187,7 +167,7 @@
     },
 
     render: function() {
-      if (this.geoProvider.isAvailable()) {
+      if (this.locationProvider.isAvailable()) {
         this.renderCoordinateView();        
       } else {
         this.renderAddressView();
@@ -197,7 +177,7 @@
 
     renderCoordinateView: function() {
       this.coordinateView = new CoordinateView({
-        geoProvider: this.geoProvider
+        locationProvider: this.locationProvider
       });
       
       this.$el.append(this.coordinateView.render().el);
