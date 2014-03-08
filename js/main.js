@@ -4,7 +4,10 @@
 
   window.JST['animal-identifier'] = _.template("<div class='row'><div class='large-6 columns'><input type='number' min='0' max='999' id='animal-identifier' placeholder='Tag number' autofocus></div></div>");
   window.JST['location/address'] = _.template("<div id='address-template'><div class='row'><div class='large-6 columns'><div class='row'><div class='large-12 columns'><label for='suburb'>Suburb</label><input id='suburb' name='Suburb' type='text' /></div></div><div class='row'><div class='large-12 columns'><label for='street'>Street</label><input id='street' name='Street' type='text' /></div></div></div></div>");
-  window.JST['location/gps'] = _.template("<div id='coordinate-template'><div class='row'><div class='large-6 columns'><div class='panel'><p><span id='gps-status'>Getting Location...</span></p></div></div></div>");
+  window.JST['location/gps'] = _.template("<div id='coordinate-template'><div class='row'><div class='large-6 columns'><div class='panel'><p><span id='gps-status'>Latitude: <%= latitude %>, Longitude: <%= longitude %></span></p></div></div></div>");
+  window.JST['location/pending'] = _.template("<div id='coordinate-template'><div class='row'><div class='large-6 columns'><div class='panel'><p><span id='gps-status'>Getting Location...</span></p></div></div></div>");
+
+
   window.JST['image'] = _.template("\
     <div class='row'> \
       <div class='large-6 columns' id='image-container'> \
@@ -13,7 +16,24 @@
       </div> \
     </div>");
 
-  window.Position = Backbone.Model.extend({});
+  window.Position = Backbone.Model.extend({
+
+    initialize: function(options) {
+      _.bindAll(this, 'setAttributesFromGeoposition');
+
+      if (options !== undefined) {
+        if (options.geoposition !== undefined) {
+          this.setAttributesFromGeoposition(options.geoposition);
+        }
+      }
+    },
+
+    setAttributesFromGeoposition: function(geoposition) {
+      this.set(geoposition.coords);
+      this.set({ timestamp: geoposition.timestamp });
+    }
+
+  });
 
   window.LocationProvider = Backbone.Model.extend({
 
@@ -45,8 +65,10 @@
     },
 
     onSuccess: function(position) { 
-      this.trigger('didUpdateLocation', position);
-      console.log('didUpdateLocation: ', position); 
+      var positionModel = new Position({ geoposition: position });
+      this.set('lastLocation', positionModel);
+      this.trigger('didUpdateLocation', positionModel);
+      console.log('didUpdateLocation: ', positionModel); 
     },
 
     onError: function(error) { 
@@ -112,6 +134,8 @@
   });
 
   window.AppView = Backbone.View.extend({
+
+    tagName: 'form', 
 
     initialize: function() {
       _.bindAll(this, 
@@ -200,12 +224,32 @@
     
     template: window.JST['location/gps'],//$('#coordinate-template').html()),
   
-    initialize: function() {
-      _.bindAll(this, 'render');
+    initialize: function(options) {
+      _.bindAll(this, 'render', 'renderPosition');
+
+      if (options !== undefined) {
+        if (options.locationProvider !== undefined) {
+          this.locationProvider = options.locationProvider;
+          this.locationProvider.on('didUpdateLocation', this.renderPosition);
+        }
+      }
     },
 
     render: function() {
-      $(this.el).html(this.template());
+      var lastLocation = this.locationProvider.get('lastLocation');
+      
+      if (lastLocation === undefined) {
+        $(this.el).html(JST['location/pending']());
+      } else
+      {
+        this.renderPosition(lastLocation);
+      }
+      return this;
+    },
+
+    renderPosition: function(position) {
+      $(this.el).html(this.template( {latitude: position.get('latitude'), longitude: position.get('longitude')} ));
+      console.log('el: ', this.$el);
       return this;
     }
   });

@@ -3,6 +3,34 @@ describe("Position", function() {
     var position = new Position();
     expect(position).toExist();
   });
+
+  it("should accept a geoposition object on instantiation", function() {
+    var geoposition = { 
+      coords: {
+        latitude: 33.882973359510984,
+        longitude: 151.26951911449567,
+        altitude: 10,
+        accuracy: 65, 
+        altitudeAccuracy: 50,
+        heading: 90,
+        speed: 1
+      }, 
+      timestamp: 415836029296
+    }
+
+    var position = new Position({ geoposition: geoposition });
+
+    console.log('position: ', position);
+
+    expect(position.get('latitude')).toBe(33.882973359510984);
+    expect(position.get('longitude')).toBe(151.26951911449567);
+    expect(position.get('altitude')).toBe(10);
+    expect(position.get('accuracy')).toBe(65);
+    expect(position.get('altitudeAccuracy')).toBe(50);
+    expect(position.get('heading')).toBe(90);
+    expect(position.get('speed')).toBe(1);
+    expect(position.get('timestamp')).toBe(415836029296);
+  });
 });
 
 describe("LocationProvider", function() {
@@ -31,10 +59,17 @@ describe("LocationProvider", function() {
       var spy = sinon.spy();
       this.locationProvider.on('didUpdateLocation', spy);
   
-      var position = {}; 
+      var position = {};
       this.locationProvider.onSuccess(position);
   
-      expect(spy.calledWith(position)).toBeTruthy();
+      expect(spy.calledOnce).toBeTruthy();
+    });
+
+    it("should set the lastLocation attribute", function() {
+      var position = {};
+      this.locationProvider.onSuccess(position);
+
+      expect(this.locationProvider.get('lastLocation')).toExist();
     });
   });
 
@@ -160,6 +195,29 @@ describe("LocationView", function() {
       expect($el).toHaveText('33.882973');
       expect($el).toHaveText('151.269519');
     });
+  });
+});
+
+describe("CoordinateView", function() {
+
+  it("should accept a locationProvider object on instantiation", function() {
+    var locationProvider = new LocationProvider();
+    var coordinateView = new CoordinateView({locationProvider: locationProvider});
+
+    expect(coordinateView.locationProvider).toEqual(locationProvider);
+  });
+
+  it("should update view with new coordinates", function() {
+    var geoposition =  { coords: { latitude: 33.882973359510984, longitude: 151.26951911449567, altitude: null, accuracy: 65, altitudeAccuracy: null, heading: null, speed: null }, timestamp: 415836029296 };
+    var position = new Position({ geoposition: geoposition });
+    var locationProvider = new LocationProvider();
+    var coordinateView = new CoordinateView({ locationProvider: locationProvider });
+
+    locationProvider.trigger('didUpdateLocation', position);
+
+    console.log("coordinateView el: ", coordinateView.el);
+    expect(coordinateView.el).toMatch(/*33.882973*/);
+    expect(coordinateView.el).toMatch(/*151.269519*/);
   });
 });
 
