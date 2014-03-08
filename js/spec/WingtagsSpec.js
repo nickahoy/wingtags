@@ -58,6 +58,13 @@ describe("LocationView", function() {
     this.locationView.locationProvider = new LocationProvider();
   });
 
+  it("Should accept a locationProvider object on instantiation", function() {
+    var locationProvider = new LocationProvider();
+    var locationView = new LocationView({ locationProvider: locationProvider });
+
+    expect(locationView.locationProvider).toExist();
+  });
+
   describe("When GPS is not available:", function() {
 
     beforeEach(function() {
@@ -126,6 +133,32 @@ describe("LocationView", function() {
       it("should render new coords in view", function() {
         this.locationView.trigger('didUpdateLocation', [this.geoStub]);
       });
+    });
+  });
+
+  describe("On successful location capture", function() {
+
+    beforeEach(function() {
+      this.geoStub = { 
+        coords: {
+          latitude: 33.882973359510984,
+          longitude: 151.26951911449567,
+          altitude: null,
+          accuracy: 65, 
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null
+        }, 
+        timestamp: 415836029296
+      }
+    });
+
+    it("renders the latitude and longitude values", function() {
+      this.locationView.locationProvider.onSuccess(this.geoStub);
+      var $el = this.locationView.render().$el;
+
+      expect($el).toHaveText('33.882973');
+      expect($el).toHaveText('151.269519');
     });
   });
 });

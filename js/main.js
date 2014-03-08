@@ -159,11 +159,15 @@
 
   window.LocationView = Backbone.View.extend({
 
-    initialize: function() {
+    initialize: function(options) {
       _.bindAll(this, 
         'render',
         'renderCoordinateView',
         'renderAddressView');
+
+      if (options !== undefined) {
+        this.locationProvider = options.locationProvider;
+      }
     },
 
     render: function() {
